@@ -129,14 +129,15 @@ function getEvernoteImages()
         $images = array();
         if (!empty($notebooks)) {
             foreach ($notebooks as $notebook) {
-                $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true));
+                $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true, 'includeTitle' => true));
                 $filter = new NoteFilter(array('guid' => $notebook->guid));
                 $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
                 foreach ($result->notes as $note) {
                     $notedata = $ns->getNote($note->guid, false, false, false, false);
+                    if (!$notedata->resources) continue;
                     foreach ($notedata->resources as $resource) {
-                        if (substr($resource->mime, 0, 5) == "image") {
-                            $images[] = array("url" => "<img src='".$_SESSION['webApiUrlPrefix']."res/".$resource->guid."/' />");
+                        if (substr($resource->mime, 0, 5) == "image" && $resource->width > 240 && $resource->height > 150) {
+                            $images[] = array("url" => $_SESSION['webApiUrlPrefix']."res/".$resource->guid."/", "title" => $note->title);
                         }
                     }
                 }

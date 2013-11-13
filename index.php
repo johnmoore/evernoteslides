@@ -32,7 +32,7 @@ if (isset($_GET['action'])) {
     <head>
         <title>Evernote Slides</title>
         <link href="css/least.min.css" rel="stylesheet" />
-        <script src="http://code.jquery.com/jquery-latest.js" defer="defer"></script>
+        <script src="http://code.jquery.com/jquery-latest.js"></script>
         <script src="js/least.min.js" defer="defer"></script>
         <script src="js/jquery.lazyload.min.js" defer="defer"></script>
         <?PHP
@@ -50,21 +50,26 @@ if (isset($_GET['action'])) {
     <body>
     <?PHP
         if (isAuthenticated()) {
+            $images = getEvernoteImages();
     ?>
         <section>
         <ul id="gallery">
             <li id="fullPreview"></li>
             
+            <?PHP
+                if(count($images) > 0) {
+                    foreach ($images as $image) {
+            ?>
             <li>
-                <a href="img/full/1.jpg"></a>
-                <img data-original="img/thumb/1.jpg" src="img/effects/white.gif" width="240" height="150" alt="Ocean" />
+                <a href="<?=$image['url']?>"></a>
+                <img data-original="<?=$image['url']?>?resizeSmall&width=240" src="<?=$image['url']?>" width="240" height="150" alt="Ocean" />
                 
                 <div class="overLayer"></div>
                 <div class="infoLayer">
                     <ul>
                         <li>
                             <h2>
-                                Ocean
+                                <?=$image['title']?>
                             </h2>
                         </li>
                         <li>
@@ -78,9 +83,13 @@ if (isset($_GET['action'])) {
                 <div class="projectInfo">
                     <strong>
                         Day, Month, Year:
-                    </strong> sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.
+                    </strong> 
                 </div>
             </li>
+            <?PHP
+                }
+            }
+            ?>
         </ul>
         </section>
     <?PHP
