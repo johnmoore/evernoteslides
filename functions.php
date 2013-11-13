@@ -10,6 +10,8 @@ use EDAM\Error\EDAMSystemException,
     EDAM\Error\EDAMErrorCode,
     EDAM\Error\EDAMNotFoundException;
 use Evernote\Client;
+use EDAM\NoteStore\NoteFilter;
+use EDAM\NoteStore\NotesMetadataResultSpec;
 
 function getTemporaryCredentials()
 {
@@ -124,7 +126,12 @@ function listNotebooks()
         $result = array();
         if (!empty($notebooks)) {
             foreach ($notebooks as $notebook) {
-                $result[] = $notebook->name;
+                $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true));
+                $filter = new NoteFilter(array('guid' => $notebook->guid));
+                $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
+                foreach ($result->notes as $note) {
+                    print $note->guid."\r\n";
+                }
             }
         }
         $_SESSION['notebooks'] = $result;
