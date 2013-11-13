@@ -12,7 +12,7 @@
         $.fn.least = function(options) {
                 var settings = $.extend({
                         'random': false,
-                        'lazyload': false,
+                        'lazyload': true,
                         'scrollToGallery': true
                 }, options);
 

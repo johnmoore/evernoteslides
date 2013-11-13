@@ -10,12 +10,12 @@ use EDAM\Error\EDAMSystemException,
     EDAM\Error\EDAMErrorCode,
     EDAM\Error\EDAMNotFoundException;
 use Evernote\Client;
-use EDAM\NoteStore\NoteFilter;
-use EDAM\NoteStore\NotesMetadataResultSpec;
+use EDAM\NoteStore\NoteFilter,
+    EDAM\NoteStore\NotesMetadataResultSpec;
 
 function getTemporaryCredentials()
 {
-    global $lastError, $currentStatus;
+    global $lastError;
     try {
         $client = new Client(array(
             'consumerKey' => OAUTH_CONSUMER_KEY,
@@ -26,8 +26,6 @@ function getTemporaryCredentials()
         if ($requestTokenInfo) {
             $_SESSION['requestToken'] = $requestTokenInfo['oauth_token'];
             $_SESSION['requestTokenSecret'] = $requestTokenInfo['oauth_token_secret'];
-            $currentStatus = 'Obtained temporary credentials';
-
             return TRUE;
         } else {
             $lastError = 'Failed to obtain temporary credentials.';
@@ -44,7 +42,6 @@ function handleCallback()
     global $lastError, $currentStatus;
     if (isset($_GET['oauth_verifier'])) {
         $_SESSION['oauthVerifier'] = $_GET['oauth_verifier'];
-        $currentStatus = 'Content owner authorized the temporary credentials';
         return TRUE;
     } else {
         $lastError = 'Content owner did not authorize the temporary credentials';
@@ -74,7 +71,7 @@ function getTokenCredentials()
             $_SESSION['name'] = (strlen($user->name) > 0 ? $user->name : $user->username);
             $_SESSION['accessToken'] = $accessTokenInfo['oauth_token'];
             $_SESSION['authenticated'] = true;
-            $currentStatus = 'Exchanged the authorized temporary credentials for token credentials';
+            $_SESSION['notes'] = array();
             return TRUE;
         } else {
             $lastError = 'Failed to obtain token credentials.';
@@ -122,57 +119,108 @@ function trimTitle($title) {
     return $title;
 }
 
-function getEvernoteImages()
-{
-    global $lastError, $currentStatus;
+function isValidResource($resource) {
+    if (substr($resource->mime, 0, 5) == "image" && $resource->width >= MIN_WIDTH && $resource->height >= MIN_HEIGHT) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function getAllNotebookImages($notebooks, $cache=true) {
+    if (!$notebooks)
+        return false;        
+    $images = array();
+    if (!empty($notebooks)) {
+        foreach ($notebooks as $notebook) {
+            $result = getNotebookImages($notebook, $cache);
+            if ($result) {
+                $images = array_merge($images, $result);
+            }
+        }
+    }
+    return $images;
+}
+
+function getNotebookNotes($notebook, $cache=true) {
+    if ($cache && isset($_SESSION['notebooks'][$notebook->guid]->notes))
+        return $_SESSION['notebooks'][$notebook->guid]->notes;
+    try {
+        $client = getClient();
+        $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true, 'includeTitle' => true));
+        $filter = new NoteFilter(array('guid' => $notebook->guid));
+        $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
+        $_SESSION['notebooks'][$notebook->guid]->notes = $result->notes;
+        return $result->notes;
+    } catch (Exception $e) {
+        $lastError = 'Error listing notebooks: ' . $e->getMessage();
+    }
+    return false;
+}
+
+function getNote($guid, $cache=true) {
+    if ($cache && isset($_SESSION['notes'][$guid]))
+        return $_SESSION['notes'][$guid];
+    $client = getClient();
+    $note = $client->getNoteStore()->getNote($guid, false, false, true, false);
+    $_SESSION['notes'][$guid] = $note;
+    return $note;
+}
+
+function getNotebookImages($notebook, $cache=true) {
+    if (!$notebook)
+        return false;
+    $notes = getNotebookNotes($notebook, $cache);
+    if (!$notes)
+        return false;
+    $images = array();
 
     try {
+        foreach ($notes as $note) {
+            $notedata = getNote($note->guid, $cache);
+            $resources = $notedata->resources;
+            if (!$resources) continue;
+            $resources = array_filter($resources, "isValidResource");
+            foreach ($resources as $resource) {
+                $images[] = array("thumb" => $_SESSION['webApiUrlPrefix']."thm/res/".$resource->guid."?size=240&auth=".$_SESSION['accessToken'], "url" => $_SESSION['webApiUrlPrefix']."res/".$resource->guid."?auth=".$_SESSION['accessToken'], "title" => trimTitle($note->title));
+            }
+        }
+        return $images;
+    } catch (Exception $e) {
+        $lastError = 'Error listing notebooks: ' . $e->getMessage();
+    }
+    return false;
+}
+
+function getClient() {
+    global $client;
+    if (!isset($client)) {
         $accessToken = $_SESSION['accessToken'];
         $client = new Client(array(
                     'token' => $accessToken,
                     'sandbox' => SANDBOX
         ));
-        $ns = $client->getNoteStore();
-        $notebooks = $ns->listNotebooks();
-        $result = array();
-        $images = array();
-        if (!empty($notebooks)) {
-            foreach ($notebooks as $notebook) {
-                $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true, 'includeTitle' => true));
-                $filter = new NoteFilter(array('guid' => $notebook->guid));
-                $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
-                foreach ($result->notes as $note) {
-                    $notedata = $ns->getNote($note->guid, false, false, true, false);
-                    if (!$notedata->resources) continue;
-                    foreach ($notedata->resources as $resource) {
-                        if (substr($resource->mime, 0, 5) == "image" && $resource->width > 240 && $resource->height > 150) {
-                            $images[] = array("thumb" => $_SESSION['webApiUrlPrefix']."res/thm/".$resource->guid, "url" => $_SESSION['webApiUrlPrefix']."res/".$resource->guid, "title" => trimTitle($note->title));
-                        }
-                    }
-                }
-            }
-        }
-        $currentStatus = 'Successfully listed content owner\'s notebooks';
+    }
+    return $client;
+}
 
-        return $images;
-    } catch (EDAMSystemException $e) {
-        if (isset(EDAMErrorCode::$__names[$e->errorCode])) {
-            $lastError = 'Error listing notebooks: ' . EDAMErrorCode::$__names[$e->errorCode] . ": " . $e->parameter;
-        } else {
-            $lastError = 'Error listing notebooks: ' . $e->getCode() . ": " . $e->getMessage();
+function getNotebooks($cache=true)
+{
+    if ($cache && isset($_SESSION['notebooks']))
+        return $_SESSION['notebooks'];
+
+    global $lastError;
+
+    try {
+        $client = getClient();
+        $result = $client->getNoteStore()->listNotebooks();
+        foreach ($result as $notebook) {
+            $notebooks[$notebook->guid] = $notebook;
         }
-    } catch (EDAMUserException $e) {
-        if (isset(EDAMErrorCode::$__names[$e->errorCode])) {
-            $lastError = 'Error listing notebooks: ' . EDAMErrorCode::$__names[$e->errorCode] . ": " . $e->parameter;
-        } else {
-            $lastError = 'Error listing notebooks: ' . $e->getCode() . ": " . $e->getMessage();
-        }
-    } catch (EDAMNotFoundException $e) {
-        if (isset(EDAMErrorCode::$__names[$e->errorCode])) {
-            $lastError = 'Error listing notebooks: ' . EDAMErrorCode::$__names[$e->errorCode] . ": " . $e->parameter;
-        } else {
-            $lastError = 'Error listing notebooks: ' . $e->getCode() . ": " . $e->getMessage();
-        }
+        $_SESSION['notebooks'] = $notebooks;
+
+        return $notebooks;
+
     } catch (Exception $e) {
         $lastError = 'Error listing notebooks: ' . $e->getMessage();
     }
@@ -183,4 +231,5 @@ function getEvernoteImages()
 function isAuthenticated() {
     return (isset($_SESSION['authenticated']) ? $_SESSION['authenticated'] : false);
 }
+
 ?>
