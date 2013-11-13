@@ -12,7 +12,7 @@ $currentStatus = null;
 if (isset($_GET['action'])) {
     $action = $_GET['action'];
     if ($action == 'callback') {
-        if (handleCallback()) {
+        if (!isAuthenticated() && handleCallback()) {
             getTokenCredentials();
         }
     } elseif ($action == 'authorize') {
@@ -24,6 +24,12 @@ if (isset($_GET['action'])) {
     }
 }
 
+if (isAuthenticated()) {
+    $images = getEvernoteImages();
+    if (count($images) == 0) {
+        $lastError = "You don't have any images in your notebooks";
+    }
+}
 ?>
 
 <html>
@@ -52,7 +58,7 @@ if (isset($_GET['action'])) {
                 Evernote Slides
             </h1>
             <?PHP
-            if (isAuthenticated()) {
+            if (isAuthenticated() && !isset($lastError)) {
             ?>
             <h2>
                 welcome, <?=$_SESSION['name']?>
@@ -61,16 +67,16 @@ if (isset($_GET['action'])) {
             }
             ?>
         </header>
-    <?PHP
-        if (isset($lastError)) {
-    ?>
-
-    <?PHP
-        } else if (isAuthenticated()) {
-            $images = getEvernoteImages();
-    ?>
         <section>
         <ul id="gallery">
+        <?PHP
+        if (isset($lastError)) {
+        ?>
+            <h3 class="error">Uh-oh!</h3>
+            <p class="error"><?=$lastError?></p>
+        <?PHP
+        } else if (isAuthenticated()) {
+        ?>
             <li id="fullPreview"></li>
             
             <?PHP
@@ -80,7 +86,7 @@ if (isset($_GET['action'])) {
             <li>
                 <a href="<?=$image['url']?>"></a>
                 
-                <img data-original="<?=$image['url']?>?resizeSmall&height=150" src="<?=$image['url']?>" height="150" width="240" alt="" />
+                <img data-original="<?=$image['url']?>" src="<?=$image['thumb']?>" height="150" width="240" alt="" />
                 <div class="overLayer"></div>
                 <div class="infoLayer">
                     <ul>
@@ -108,6 +114,7 @@ if (isset($_GET['action'])) {
             }
             ?>
         </ul>
+        </section>
     <?PHP
         } else {
     ?>

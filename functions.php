@@ -115,6 +115,13 @@ function getAuthorizationUrl()
     return $client->getAuthorizeUrl($_SESSION['requestToken']);
 }
 
+function trimTitle($title) {
+    if (strlen($title) > 18) {
+        $title = substr($title, 0, 15)."...";
+    }
+    return $title;
+}
+
 function getEvernoteImages()
 {
     global $lastError, $currentStatus;
@@ -139,7 +146,7 @@ function getEvernoteImages()
                     if (!$notedata->resources) continue;
                     foreach ($notedata->resources as $resource) {
                         if (substr($resource->mime, 0, 5) == "image" && $resource->width > 240 && $resource->height > 150) {
-                            $images[] = array("url" => $_SESSION['webApiUrlPrefix']."res/".$resource->guid."/", "title" => $note->title);
+                            $images[] = array("thumb" => $_SESSION['webApiUrlPrefix']."res/thm/".$resource->guid, "url" => $_SESSION['webApiUrlPrefix']."res/".$resource->guid, "title" => trimTitle($note->title));
                         }
                     }
                 }
