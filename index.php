@@ -13,6 +13,9 @@ if (isset($_GET['action'])) {
     if ($action == 'callback') {
         if (!isAuthenticated() && handleCallback()) {
             getTokenCredentials();
+            $notebooks = getNotebooks(false);
+            $images = getAllNotebookImages($notebooks, false);
+            header("Location: index.php");
         }
     } else if ($action == 'authorize') {
         if (getTemporaryCredentials()) {
