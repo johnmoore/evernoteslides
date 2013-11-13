@@ -69,7 +69,9 @@ function getTokenCredentials()
         ));
         $accessTokenInfo = $client->getAccessToken($_SESSION['requestToken'], $_SESSION['requestTokenSecret'], $_SESSION['oauthVerifier']);
         if ($accessTokenInfo) {
+            $user = $client->getUserStore()->getUser();
             $_SESSION['webApiUrlPrefix'] = $accessTokenInfo['edam_webApiUrlPrefix'];
+            $_SESSION['name'] = (strlen($user->name) > 0 ? $user->name : $user->username);
             $_SESSION['accessToken'] = $accessTokenInfo['oauth_token'];
             $_SESSION['authenticated'] = true;
             $currentStatus = 'Exchanged the authorized temporary credentials for token credentials';
@@ -133,7 +135,7 @@ function getEvernoteImages()
                 $filter = new NoteFilter(array('guid' => $notebook->guid));
                 $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
                 foreach ($result->notes as $note) {
-                    $notedata = $ns->getNote($note->guid, false, false, false, false);
+                    $notedata = $ns->getNote($note->guid, false, false, true, false);
                     if (!$notedata->resources) continue;
                     foreach ($notedata->resources as $resource) {
                         if (substr($resource->mime, 0, 5) == "image" && $resource->width > 240 && $resource->height > 150) {

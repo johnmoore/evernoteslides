@@ -20,7 +20,7 @@
 ul {
   list-style: none; }
 
-h2 {
+section h2 {
   font-family: Arvo, Arial, sans-serif;
   font-size: 30px;
   line-height: 25px;
@@ -41,7 +41,6 @@ p {
 section {
   min-width: 100%;
   width: 100%;
-  min-height: 100%;
   text-align: center;
   padding: 30px 0;
   margin-bottom: 30px;
@@ -159,5 +158,9 @@ section {
             font-size: 25px; }
     section li .projectInfo {
       display: none; }
-
+section li .centerLayer {
+      width: 240px;
+      height: 150px;
+      text-align: center;	
+}
 /* end */

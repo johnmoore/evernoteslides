@@ -13,9 +13,7 @@ if (isset($_GET['action'])) {
     $action = $_GET['action'];
     if ($action == 'callback') {
         if (handleCallback()) {
-            if (getTokenCredentials()) {
-                //Get pics, set up stuff
-            }
+            getTokenCredentials();
         }
     } elseif ($action == 'authorize') {
         if (getTemporaryCredentials()) {
@@ -32,6 +30,7 @@ if (isset($_GET['action'])) {
     <head>
         <title>Evernote Slides</title>
         <link href="css/least.min.css" rel="stylesheet" />
+        <link href="css/main.css" rel="stylesheet" />
         <script src="http://code.jquery.com/jquery-latest.js"></script>
         <script src="js/least.min.js" defer="defer"></script>
         <script src="js/jquery.lazyload.min.js" defer="defer"></script>
@@ -48,8 +47,26 @@ if (isset($_GET['action'])) {
         ?>
     </head>
     <body>
+        <header>
+            <h1>
+                Evernote Slides
+            </h1>
+            <?PHP
+            if (isAuthenticated()) {
+            ?>
+            <h2>
+                welcome, <?=$_SESSION['name']?>
+            </h2>
+            <?PHP
+            }
+            ?>
+        </header>
     <?PHP
-        if (isAuthenticated()) {
+        if (isset($lastError)) {
+    ?>
+
+    <?PHP
+        } else if (isAuthenticated()) {
             $images = getEvernoteImages();
     ?>
         <section>
@@ -62,8 +79,8 @@ if (isset($_GET['action'])) {
             ?>
             <li>
                 <a href="<?=$image['url']?>"></a>
-                <img data-original="<?=$image['url']?>?resizeSmall&width=240" src="<?=$image['url']?>" width="240" height="150" alt="Ocean" />
                 
+                <img data-original="<?=$image['url']?>?resizeSmall&height=150" src="<?=$image['url']?>" height="150" width="240" alt="" />
                 <div class="overLayer"></div>
                 <div class="infoLayer">
                     <ul>
@@ -74,7 +91,7 @@ if (isset($_GET['action'])) {
                         </li>
                         <li>
                             <p>
-                                View Picture
+                                view picture
                             </p>
                         </li>
                     </ul>
@@ -82,7 +99,7 @@ if (isset($_GET['action'])) {
                 
                 <div class="projectInfo">
                     <strong>
-                        Day, Month, Year:
+
                     </strong> 
                 </div>
             </li>
@@ -91,13 +108,12 @@ if (isset($_GET['action'])) {
             }
             ?>
         </ul>
-        </section>
     <?PHP
         } else {
     ?>
-        <p>
-            <a href="index.php?action=authorize">Click here</a> to authorize this application to access your Evernote account. You will be directed to evernote.com to authorize access, then returned to this application after authorization is complete.
-        </p>
+        <div id="connect">
+            <a href="index.php?action=authorize"><img src="connect.png" /></a>
+        </div>
     <?PHP
         }
     ?>

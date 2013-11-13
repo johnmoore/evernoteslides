@@ -1,0 +1,50 @@
+@import url(http://fonts.googleapis.com/css?family=Arvo);
+
+html {
+    background-color: #fdfcfb; 
+}
+
+ul {
+    list-style: none;
+}
+
+h1 {
+    font-family: Arvo, Arial, sans-serif;
+    font-size: 60px;
+    line-height: 75px;
+    font-weight: 400;
+    color: #3bb428;
+    text-transform: lowercase;
+}
+header h2 {
+    font-family: Arvo, Arial, sans-serif;
+    font-size: 20px;
+    line-height: 25px;
+    font-weight: 200;
+    color: #3bb428;
+    letter-spacing: 1px;
+    margin-top:15px;
+	margin-bottom:40px;
+}
+
+header {
+    min-width: 100%;
+    width: 100%;
+    text-align: center;
+    min-height: 120px; 
+    margin-top: 50px;
+}
+
+header p {
+    font-family: Arvo, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 25px;
+    font-weight: 400;
+    color: #e94439;
+}
+
+#connect {
+    width:100%;
+    margin: 0 auto;
+    text-align: center;
+}
