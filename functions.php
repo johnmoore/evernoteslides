@@ -69,6 +69,7 @@ function getTokenCredentials()
         ));
         $accessTokenInfo = $client->getAccessToken($_SESSION['requestToken'], $_SESSION['requestTokenSecret'], $_SESSION['oauthVerifier']);
         if ($accessTokenInfo) {
+            $_SESSION['webApiUrlPrefix'] = $accessTokenInfo['edam_webApiUrlPrefix'];
             $_SESSION['accessToken'] = $accessTokenInfo['oauth_token'];
             $_SESSION['authenticated'] = true;
             $currentStatus = 'Exchanged the authorized temporary credentials for token credentials';
@@ -112,7 +113,7 @@ function getAuthorizationUrl()
     return $client->getAuthorizeUrl($_SESSION['requestToken']);
 }
 
-function listNotebooks()
+function getEvernoteImages()
 {
     global $lastError, $currentStatus;
 
@@ -122,22 +123,28 @@ function listNotebooks()
                     'token' => $accessToken,
                     'sandbox' => SANDBOX
         ));
-        $notebooks = $client->getNoteStore()->listNotebooks();
+        $ns = $client->getNoteStore();
+        $notebooks = $ns->listNotebooks();
         $result = array();
+        $images = array();
         if (!empty($notebooks)) {
             foreach ($notebooks as $notebook) {
                 $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true));
                 $filter = new NoteFilter(array('guid' => $notebook->guid));
                 $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
                 foreach ($result->notes as $note) {
-                    print $note->guid."\r\n";
+                    $notedata = $ns->getNote($note->guid, false, false, false, false);
+                    foreach ($notedata->resources as $resource) {
+                        if (substr($resource->mime, 0, 5) == "image") {
+                            $images[] = array("url" => "<img src='".$_SESSION['webApiUrlPrefix']."res/".$resource->guid."/' />");
+                        }
+                    }
                 }
             }
         }
-        $_SESSION['notebooks'] = $result;
         $currentStatus = 'Successfully listed content owner\'s notebooks';
 
-        return TRUE;
+        return $images;
     } catch (EDAMSystemException $e) {
         if (isset(EDAMErrorCode::$__names[$e->errorCode])) {
             $lastError = 'Error listing notebooks: ' . EDAMErrorCode::$__names[$e->errorCode] . ": " . $e->parameter;
