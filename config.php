@@ -5,4 +5,5 @@ define('SANDBOX', TRUE);
 
 define('MIN_WIDTH', 240);
 define('MIN_HEIGHT', 240);
+define('MAX_NOTES', 100);
 ?>

@@ -149,7 +149,7 @@ function getNotebookNotes($notebook, $cache=true) {
         $client = getClient();
         $spec = new NotesMetadataResultSpec(array('includeLargestResourceMime' => true, 'includeTitle' => true));
         $filter = new NoteFilter(array('guid' => $notebook->guid));
-        $result = $client->getNoteStore()->findNotesMetadata($filter, 0, 100, $spec);
+        $result = $client->getNoteStore()->findNotesMetadata($filter, 0, MAX_NOTES, $spec);
         $_SESSION['notebooks'][$notebook->guid]->notes = $result->notes;
         return $result->notes;
     } catch (Exception $e) {
@@ -162,7 +162,7 @@ function getNote($guid, $cache=true) {
     if ($cache && isset($_SESSION['notes'][$guid]))
         return $_SESSION['notes'][$guid];
     $client = getClient();
-    $note = $client->getNoteStore()->getNote($guid, false, false, true, false);
+    $note = $client->getNoteStore()->getNote($guid, false, false, false, false);
     $_SESSION['notes'][$guid] = $note;
     return $note;
 }
